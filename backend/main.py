@@ -13,3 +13,4 @@ def db_check():
     with engine.connect() as connection:
         result = connection.execute(text("SELECT 1"))
         return {"database_connected": result.scalar() == 1}
+
