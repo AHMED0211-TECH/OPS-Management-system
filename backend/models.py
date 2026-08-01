@@ -1,3 +1,4 @@
+from enum import unique
 from sqlalchemy import Column, Integer, String, ForeignKey, DateTime
 from sqlalchemy.orm import relationship
 from datetime import datetime
@@ -15,8 +16,10 @@ class User(Base):
     __tablename__ = "users"
 
     id = Column(Integer, primary_key=True)
+    supabase_id = Column(String, unique=True, nullable=False)
     name = Column(String, nullable=False)
-    team_id = Column(Integer, ForeignKey("teams.id"), nullable=False)
+    role = Column(String, nullable=False) # "manager" or "team_member"
+    team_id = Column(Integer, ForeignKey("teams.id"), nullable=True)
 
     team = relationship("Team")
 
