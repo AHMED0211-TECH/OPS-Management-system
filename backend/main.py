@@ -1,7 +1,10 @@
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI, Depends, HTTPException
 from sqlalchemy import text
 from database import engine
 from auth import get_current_user
+from database import get_db
+from CRUD import get_or_create_user
+from sqlalchemy.orm import Session
 
 app = FastAPI()
 
@@ -15,6 +18,21 @@ def db_check():
         result = connection.execute(text("SELECT 1"))
         return {"database_connected": result.scalar() == 1}
 @app.get("/me")
-def get_me(user=Depends(get_current_user)):
-    return {"id": user.id, "email": user.email}
+def get_me(user=Depends(get_current_user), db: Session = Depends(get_db)):
+    db_user = get_or_create_user(db, user)
+    return {
+        "id": db_user.id,
+        "supabase_id": db_user.supabase_id,
+        "name": db_user.name,
+        "role": db_user.role,
+        "team_id": db_user.team_id
+    }
+@app.get("/manager-only")
+def manager_only(user=Depends(get_current_user), db: Session = Depends(get_db)):
+    db_user = get_or_create_user(db, user)
+
+    if db_user.role != "manager":
+        raise HTTPException(status_code=403, detail="Managers only")
+
+    return {"message": f"Welcome, manager {db_user.name}"}
 
