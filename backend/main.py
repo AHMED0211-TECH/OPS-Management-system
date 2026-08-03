@@ -5,11 +5,18 @@ from auth import get_current_user
 from database import get_db
 from CRUD import get_or_create_user
 from sqlalchemy.orm import Session
-from models import MasterChecklist
+from models import MasterChecklist, Task
 from pydantic import BaseModel
 
 class ChecklistCreate(BaseModel):
     title: str
+
+class TaskCreate(BaseModel):
+    title: str
+    checklist_id: int
+    team_id: int
+    frequency: str
+    interval_hours: int | None = None
 
 app = FastAPI()
 
@@ -65,4 +72,35 @@ def create_checklist(
         "title": new_checklist.title,
         "created_by": new_checklist.created_by,
         "created_at": new_checklist.created_at
+    }
+    
+@app.post("/tasks")
+def create_task(
+    task: TaskCreate,
+    user=Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    db_user = get_or_create_user(db, user)
+
+    if db_user.role != "manager":
+        raise HTTPException(status_code=403, detail="Only managers can create tasks")
+
+    new_task = Task(
+        title=task.title,
+        checklist_id=task.checklist_id,
+        team_id=task.team_id,
+        frequency=task.frequency,
+        interval_hours=task.interval_hours
+    )
+    db.add(new_task)
+    db.commit()
+    db.refresh(new_task)
+
+    return {
+        "id": new_task.id,
+        "title": new_task.title,
+        "checklist_id": new_task.checklist_id,
+        "team_id": new_task.team_id,
+        "frequency": new_task.frequency,
+        "interval_hours": new_task.interval_hours
     }
