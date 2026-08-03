@@ -5,6 +5,11 @@ from auth import get_current_user
 from database import get_db
 from CRUD import get_or_create_user
 from sqlalchemy.orm import Session
+from models import MasterChecklist
+from pydantic import BaseModel
+
+class ChecklistCreate(BaseModel):
+    title: str
 
 app = FastAPI()
 
@@ -36,3 +41,28 @@ def manager_only(user=Depends(get_current_user), db: Session = Depends(get_db)):
 
     return {"message": f"Welcome, manager {db_user.name}"}
 
+@app.post("/checklists")
+def create_checklist(
+    checklist: ChecklistCreate,
+    user=Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    db_user = get_or_create_user(db, user)
+
+    if db_user.role != "manager":
+        raise HTTPException(status_code=403, detail="Only managers can create checklists")
+
+    new_checklist = MasterChecklist(
+        title=checklist.title,
+        created_by=db_user.id
+    )
+    db.add(new_checklist)
+    db.commit()
+    db.refresh(new_checklist)
+
+    return {
+        "id": new_checklist.id,
+        "title": new_checklist.title,
+        "created_by": new_checklist.created_by,
+        "created_at": new_checklist.created_at
+    }
