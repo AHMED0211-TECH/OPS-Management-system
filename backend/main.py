@@ -48,6 +48,26 @@ def manager_only(user=Depends(get_current_user), db: Session = Depends(get_db)):
 
     return {"message": f"Welcome, manager {db_user.name}"}
 
+@app.get("/my-tasks")
+def get_my_tasks(user=Depends(get_current_user), db: Session = Depends(get_db)):
+    db_user = get_or_create_user(db, user)
+
+    if db_user.team_id is None:
+        raise HTTPException(status_code=400, detail="User is not assigned to a team")
+
+    tasks = db.query(Task).filter(Task.team_id == db_user.team_id).all()
+
+    return [
+        {
+            "id": t.id,
+            "title": t.title,
+            "checklist_id": t.checklist_id,
+            "frequency": t.frequency,
+            "interval_hours": t.interval_hours
+        }
+        for t in tasks
+    ]
+
 @app.post("/checklists")
 def create_checklist(
     checklist: ChecklistCreate,
