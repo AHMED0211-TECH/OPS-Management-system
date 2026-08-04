@@ -1,5 +1,5 @@
 from enum import unique
-from sqlalchemy import Column, Integer, String, ForeignKey, DateTime
+from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Date
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from database import Base
@@ -45,3 +45,15 @@ class Task(Base):
 
     checklist = relationship("MasterChecklist")
     team = relationship("Team")
+
+class TaskInstance(Base):
+    __tablename__ = "task_instances"
+    
+    id = Column(Integer, primary_key=True)
+    task_id = Column(Integer, ForeignKey("tasks.id"), nullable=False)
+    due_date = Column(Date, nullable=False)
+    status = Column(String, nullable=False)  # "pending", "completed", "locked"
+    completed_at = Column(DateTime, nullable=True)
+    
+    task = relationship("Task")
+    
