@@ -7,7 +7,7 @@ from CRUD import get_or_create_user
 from sqlalchemy.orm import Session
 from models import MasterChecklist, Task, TaskInstance
 from pydantic import BaseModel
-from datetime import date
+from datetime import date, datetime
 
 class ChecklistCreate(BaseModel):
     title: str
@@ -162,3 +162,36 @@ def generate_daily_tasks(
     db.commit()
 
     return {"message": f"Generated {created_count} task instance(s) for {today}"}
+
+@app.post("/task-instances/{instance_id}/complete")
+def complete_task(
+    instance_id: int,
+    user=Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    db_user = get_or_create_user(db, user)
+
+    instance = db.query(TaskInstance).filter(TaskInstance.id == instance_id).first()
+
+    if not instance:
+        raise HTTPException(status_code=404, detail="Task instance not found")
+
+    task = db.query(Task).filter(Task.id == instance.task_id).first()
+
+    if task.team_id != db_user.team_id:
+        raise HTTPException(status_code=403, detail="You can only complete your own team's tasks")
+
+    if instance.status == "locked":
+        raise HTTPException(status_code=400, detail="This task is locked and can no longer be completed")
+
+    instance.status = "completed"
+    instance.completed_at = datetime.utcnow()
+    db.commit()
+    db.refresh(instance)
+
+    return {
+        "id": instance.id,
+        "task_id": instance.task_id,
+        "status": instance.status,
+        "completed_at": instance.completed_at
+    }
