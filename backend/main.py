@@ -195,3 +195,27 @@ def complete_task(
         "status": instance.status,
         "completed_at": instance.completed_at
     }
+
+@app.post("/lock-overdue-tasks")
+def lock_overdue_tasks(
+    user=Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    db_user = get_or_create_user(db, user)
+
+    if db_user.role != "manager":
+        raise HTTPException(status_code=403, detail="Only managers can lock overdue tasks")
+
+    today = date.today()
+
+    overdue_instances = db.query(TaskInstance).filter(
+        TaskInstance.status == "pending",
+        TaskInstance.due_date < today
+    ).all()
+
+    for instance in overdue_instances:
+        instance.status = "locked"
+
+    db.commit()
+
+    return {"message": f"Locked {len(overdue_instances)} overdue task instance(s)"}
