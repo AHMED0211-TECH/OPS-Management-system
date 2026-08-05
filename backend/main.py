@@ -219,3 +219,31 @@ def lock_overdue_tasks(
     db.commit()
 
     return {"message": f"Locked {len(overdue_instances)} overdue task instance(s)"}
+
+@app.get("/manager/overdue-tasks")
+def get_overdue_tasks(
+    user=Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    db_user = get_or_create_user(db, user)
+
+    if db_user.role != "manager":
+        raise HTTPException(status_code=403, detail="Managers only")
+
+    overdue_tasks = (
+        db.query(TaskInstance, Task)
+        .join(Task, Task.id == TaskInstance.task_id)
+        .filter(TaskInstance.status == "locked")
+        .all()
+    )
+
+    return [
+        {
+            "task_instance_id": instance.id,
+            "task_title": task.title,
+            "team_id": task.team_id,
+            "due_date": instance.due_date,
+            "status": instance.status
+        }
+        for instance, task in overdue_tasks
+    ]

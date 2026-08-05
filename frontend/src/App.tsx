@@ -1,53 +1,34 @@
-import { useState } from 'react'
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+
+import DashboardLayout from "./layouts/DashboardLayout";
+
+import Dashboard from "./pages/Dashboard";
+import Checklists from "./pages/Checklists";
+import Tasks from "./pages/Tasks";
+import OverdueTasks from "./pages/OverdueTasks";
+import Reports from "./pages/Reports";
+import CreateTask from "./pages/CreateTask";
+import Login from "./pages/Login";
+import Teams from "./pages/Teams";
 
 function App() {
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    console.log('Login attempt:', email, password)
-  }
-
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-100">
-      <form
-        onSubmit={handleSubmit}
-        className="bg-white p-8 rounded-lg shadow-md w-80"
-      >
-        <h1 className="text-2xl font-bold mb-6 text-center text-gray-900">Login</h1>
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<Login />} />
 
-        <label className="block mb-2 text-sm font-medium text-gray-700">
-          Email
-        </label>
-        <input
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className="w-full mb-4 px-3 py-2 border rounded-md"
-          placeholder="you@example.com"
-        />
-
-        <label className="block mb-2 text-sm font-medium text-gray-700">
-          Password
-        </label>
-        <input
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          className="w-full mb-6 px-3 py-2 border rounded-md"
-          placeholder="••••••••"
-        />
-
-        <button
-          type="submit"
-          className="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700"
-        >
-          Log In
-        </button>
-      </form>
-    </div>
-  )
+        <Route element={<DashboardLayout />}>
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/checklists" element={<Checklists />} />
+          <Route path="/tasks" element={<Tasks />} />
+          <Route path="/teams" element={<Teams />} />
+          <Route path="/tasks/new" element={<CreateTask />} />
+          <Route path="/overdue" element={<OverdueTasks />} />
+          <Route path="/reports" element={<Reports />} />
+        </Route>
+      </Routes>
+    </BrowserRouter>
+  );
 }
 
-export default App
+export default App;
