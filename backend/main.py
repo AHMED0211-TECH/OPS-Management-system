@@ -247,3 +247,24 @@ def get_overdue_tasks(
         }
         for instance, task in overdue_tasks
     ]
+
+@app.get("/reports/summary")
+def get_report_summary(
+    user=Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    db_user = get_or_create_user(db, user)
+
+    if db_user.role != "manager":
+        raise HTTPException(status_code=403, detail="Managers only")
+
+    completed_count = db.query(TaskInstance).filter(TaskInstance.status == "completed").count()
+    pending_count = db.query(TaskInstance).filter(TaskInstance.status == "pending").count()
+    locked_count = db.query(TaskInstance).filter(TaskInstance.status == "locked").count()
+
+    return {
+        "completed": completed_count,
+        "pending": pending_count,
+        "overdue": locked_count,
+        "total": completed_count + pending_count + locked_count
+    }
