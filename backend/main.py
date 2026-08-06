@@ -7,7 +7,7 @@ from CRUD import get_or_create_user
 from sqlalchemy.orm import Session
 from models import MasterChecklist, Task, TaskInstance
 from pydantic import BaseModel
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 
 class ChecklistCreate(BaseModel):
     title: str
@@ -126,8 +126,8 @@ def create_task(
         "interval_hours": new_task.interval_hours
     }
 
-@app.post("/generate-daily-tasks")
-def generate_daily_tasks(
+@app.post("/generate-tasks")
+def generate_tasks(
     user=Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
@@ -137,31 +137,48 @@ def generate_daily_tasks(
         raise HTTPException(status_code=403, detail="Only managers can generate tasks")
 
     today = date.today()
-
-    daily_tasks = db.query(Task).filter(Task.frequency == "daily").all()
-
+    now = datetime.utcnow()
+    all_tasks = db.query(Task).all()
     created_count = 0
 
-    for task in daily_tasks:
-        existing = db.query(TaskInstance).filter(
-            TaskInstance.task_id == task.id,
-            TaskInstance.due_date == today
-        ).first()
-
-        if existing:
-            continue
-
-        new_instance = TaskInstance(
-            task_id=task.id,
-            due_date=today,
-            status="pending"
+    for task in all_tasks:
+        last_instance = (
+            db.query(TaskInstance)
+            .filter(TaskInstance.task_id == task.id)
+            .order_by(TaskInstance.due_date.desc())
+            .first()
         )
-        db.add(new_instance)
-        created_count += 1
+
+        should_generate = False
+
+        if task.frequency == "daily":
+            should_generate = not last_instance or last_instance.due_date < today
+
+        elif task.frequency == "weekly":
+            should_generate = not last_instance or (today - last_instance.due_date).days >= 7
+
+        elif task.frequency == "monthly":
+            should_generate = not last_instance or (today - last_instance.due_date).days >= 30
+
+        elif task.frequency == "every_x_hours" and task.interval_hours:
+            if not last_instance:
+                should_generate = True
+            else:
+                hours_since = (now - last_instance.completed_at).total_seconds() / 3600 if last_instance.completed_at else 9999
+                should_generate = hours_since >= task.interval_hours
+
+        if should_generate:
+            new_instance = TaskInstance(
+                task_id=task.id,
+                due_date=today,
+                status="pending"
+            )
+            db.add(new_instance)
+            created_count += 1
 
     db.commit()
 
-    return {"message": f"Generated {created_count} task instance(s) for {today}"}
+    return {"message": f"Generated {created_count} task instance(s)"}
 
 @app.post("/task-instances/{instance_id}/complete")
 def complete_task(
