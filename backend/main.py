@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from models import MasterChecklist, Task, TaskInstance
 from pydantic import BaseModel
 from datetime import date, datetime, timedelta
+from fastapi.middleware.cors import CORSMiddleware
 
 class ChecklistCreate(BaseModel):
     title: str
@@ -20,6 +21,14 @@ class TaskCreate(BaseModel):
     interval_hours: int | None = None
 
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 @app.get("/")
 def root():
