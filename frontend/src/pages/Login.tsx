@@ -1,17 +1,49 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "../supabaseClient";
 
 export default function Login() {
     const navigate = useNavigate();
 
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
+    const [error, setError] = useState("");
+    const [loading, setLoading] = useState(false);
 
-    const handleLogin = (e: React.FormEvent) => {
+    const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
+        setError("");
+        setLoading(true);
 
-        // Tomorrow replace this with Supabase login
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
+
+        setLoading(false);
+
+        if (error) {
+            setError(error.message);
+            return;
+        }
+
         navigate("/dashboard");
+    };
+
+    const handleDemoLogin = async (demoEmail: string, demoPassword: string, path: string) => {
+        setError("");
+        setLoading(true);
+
+        const { error } = await supabase.auth.signInWithPassword({
+            email: demoEmail,
+            password: demoPassword,
+        });
+
+        setLoading(false);
+
+        if (error) {
+            setError(error.message);
+            return;
+        }
+
+        navigate(path);
     };
 
     return (
@@ -30,6 +62,12 @@ export default function Login() {
                     </p>
 
                 </div>
+
+                {error && (
+                    <div className="mb-4 p-3 bg-red-50 text-red-600 text-sm rounded-lg">
+                        {error}
+                    </div>
+                )}
 
                 <form onSubmit={handleLogin} className="space-y-5">
 
@@ -67,11 +105,11 @@ export default function Login() {
 
                     <button
                         type="submit"
-                        className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg transition"
+                        disabled={loading}
+                        className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg transition disabled:opacity-50"
                     >
-                        Login
+                        {loading ? "Logging in..." : "Login"}
                     </button>
-
                 </form>
 
                 <div className="my-6 flex items-center">
@@ -85,15 +123,17 @@ export default function Login() {
                 <div className="space-y-3">
 
                     <button
-                        onClick={() => navigate("/dashboard")}
-                        className="w-full border border-blue-600 text-blue-600 hover:bg-blue-50 py-3 rounded-lg transition"
+                        onClick={() => handleDemoLogin("newuser1@example.com", "test1234", "/dashboard")}
+                        disabled={loading}
+                        className="w-full border border-blue-600 text-blue-600 hover:bg-blue-50 py-3 rounded-lg transition disabled:opacity-50"
                     >
                         👨‍💼 Login as Manager
                     </button>
 
                     <button
-                        onClick={() => navigate("/team/dashboard")}
-                        className="w-full border border-green-600 text-green-600 hover:bg-green-50 py-3 rounded-lg transition"
+                        onClick={() => handleDemoLogin("testuser123@example.com", "123456789", "/team/dashboard")}
+                        disabled={loading}
+                        className="w-full border border-green-600 text-green-600 hover:bg-green-50 py-3 rounded-lg transition disabled:opacity-50"
                     >
                         👷 Login as Team Member
                     </button>

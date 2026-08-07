@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { supabase } from "./supabaseClient";
 
 import DashboardLayout from "./layouts/DashboardLayout";
 
@@ -29,6 +30,12 @@ function App() {
       </Routes>
     </BrowserRouter>
   );
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    console.log('Supabase client:', supabase)
+  }
 }
+
 
 export default App;
