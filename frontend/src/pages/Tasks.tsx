@@ -1,8 +1,32 @@
-import { tasks } from "../data/mockData";
-import { useNavigate } from "react-router-dom"
+//import { tasks } from "../data/mockData";
+import { useEffect, useState } from "react";
+import { apiFetch } from "../api";
+import { useNavigate, } from "react-router-dom"
 
+interface Task {
+    id: number;
+    title: string;
+    checklist_id: number;
+    team_id: number;
+    frequency: string;
+    interval_hours: number | null;
+}
+
+const teamNames: Record<number, string> = {
+    1: "Security",
+    2: "Operations",
+    3: "Maintenance",
+};
 export default function Tasks() {
     const navigate = useNavigate()
+    const [tasks, setTasks] = useState<Task[]>([]);
+    const [error, setError] = useState("");
+
+    useEffect(() => {
+        apiFetch("/tasks")
+            .then((data) => setTasks(data))
+            .catch((err) => setError(err.message));
+    }, []);
     return (
         <div>
 
@@ -41,10 +65,6 @@ export default function Tasks() {
 
                             <th className="text-left px-6 py-4">Frequency</th>
 
-                            <th className="text-left px-6 py-4">Due Date</th>
-
-                            <th className="text-left px-6 py-4">Status</th>
-
                         </tr>
 
                     </thead>
@@ -52,53 +72,26 @@ export default function Tasks() {
                     <tbody>
 
                         {tasks.map(task => (
-
-                            <tr
-                                key={task.id}
-                                className="border-t hover:bg-slate-50"
-                            >
-
-                                <td className="px-6 py-4 font-medium">
-                                    {task.title}
-                                </td>
-
-                                <td className="px-6 py-4">
-                                    {task.team}
-                                </td>
-
-                                <td className="px-6 py-4">
+                            <tr key={task.id} className="border-t hover:bg-slate-50">
+                                <td className="px-6 py-4 font-medium">{task.title}</td>
+                                <td className="px-6 py-4">{teamNames[task.team_id] ?? "Unknown"}</td>
+                                <td className="px-6 py-4 capitalize">
                                     {task.frequency}
+                                    {task.frequency === "every_x_hours" && task.interval_hours
+                                        ? ` (${task.interval_hours}h)`
+                                        : ""}
                                 </td>
-
-                                <td className="px-6 py-4">
-                                    {task.dueDate}
-                                </td>
-
-                                <td className="px-6 py-4">
-
-                                    <span
-                                        className={`px-3 py-1 rounded-full text-sm
-                    ${task.status === "Completed"
-                                                ? "bg-green-100 text-green-700"
-                                                : task.status === "Pending"
-                                                    ? "bg-yellow-100 text-yellow-700"
-                                                    : "bg-red-100 text-red-700"
-                                            }`}
-                                    >
-                                        {task.status}
-                                    </span>
-
-                                </td>
-
                             </tr>
-
                         ))}
-
                     </tbody>
 
                 </table>
 
             </div>
+
+            {tasks.length === 0 && !error && (
+                <p className="text-gray-500 mt-4">No tasks yet.</p>
+            )}
 
         </div>
     );
