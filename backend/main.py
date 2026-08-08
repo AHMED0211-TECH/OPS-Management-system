@@ -65,17 +65,27 @@ def get_my_tasks(user=Depends(get_current_user), db: Session = Depends(get_db)):
     if db_user.team_id is None:
         raise HTTPException(status_code=400, detail="User is not assigned to a team")
 
-    tasks = db.query(Task).filter(Task.team_id == db_user.team_id).all()
+    today = date.today()
+
+    results = (
+        db.query(TaskInstance, Task)
+        .join(Task, Task.id == TaskInstance.task_id)
+        .filter(Task.team_id == db_user.team_id)
+        .filter(TaskInstance.due_date == today)
+        .all()
+    )
 
     return [
         {
-            "id": t.id,
-            "title": t.title,
-            "checklist_id": t.checklist_id,
-            "frequency": t.frequency,
-            "interval_hours": t.interval_hours
+            "instance_id": instance.id,
+            "task_id": task.id,
+            "title": task.title,
+            "checklist_id": task.checklist_id,
+            "frequency": task.frequency,
+            "status": instance.status,
+            "due_date": instance.due_date
         }
-        for t in tasks
+        for instance,task in results
     ]
 
 @app.post("/checklists")

@@ -4,11 +4,12 @@ import { useNavigate } from "react-router-dom";
 
 
 interface MyTask {
-    id: number;
+    instance_id: number;
+    task_id: number;
     title: string;
-    checklist_id: number;
     frequency: string;
-    interval_hours: number | null;
+    status: string;
+    due_date: string;
 }
 
 export default function TeamDashboard() {
@@ -66,8 +67,8 @@ export default function TeamDashboard() {
             <div className="space-y-3">
                 {tasks.map((task) => (
                     <div
-                        key={task.id}
-                        onClick={() => navigate(`/team/tasks/${task.id}`)}
+                        key={task.instance_id}
+                        onClick={() => navigate(`/team/tasks/${task.instance_id}`)}
                         className="bg-white rounded-lg shadow p-4 flex justify-between items-center"
                     >
                         <div>
@@ -76,11 +77,11 @@ export default function TeamDashboard() {
                         </div>
 
                         <button
-                            onClick={() => handleComplete(task.id)}
-                            disabled={completingId === task.id}
+                            onClick={() => handleComplete(task.instance_id)}
+                            disabled={completingId === task.instance_id}
                             className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm transition disabled:opacity-50"
                         >
-                            {completingId === task.id ? "Completing..." : "Mark Complete"}
+                            {completingId === task.instance_id ? "Completing..." : "Mark Complete"}
                         </button>
                     </div>
                 ))}
