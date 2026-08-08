@@ -1,10 +1,17 @@
-import { Outlet } from "react-router-dom";
+import { Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { supabase } from "../supabaseClient";
 
 export default function TeamLayout() {
     const { session } = useAuth();
     const email = session?.user?.email ?? "Not logged in";
     const initial = email.charAt(0).toUpperCase();
+    const navigate = useNavigate();
+    async function handleLogout() {
+        await supabase.auth.signOut();
+        navigate("/");
+
+    }
 
     return (
         <div className="flex h-screen bg-slate-100">
@@ -31,6 +38,12 @@ export default function TeamLayout() {
                         <div className="w-10 h-10 rounded-full bg-green-600 text-white flex items-center justify-center font-bold">
                             {initial}
                         </div>
+                        <button
+                            onClick={handleLogout}
+                            className="ml-2 text-sm text-red-600 hover:text-red-700 border border-red-200 px-3 py-2 rounded-lg hover:bg-red-50 transition"
+                        >
+                            Logout
+                        </button>
                     </div>
                 </header>
 
