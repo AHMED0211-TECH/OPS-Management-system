@@ -69,20 +69,33 @@ export default function TeamDashboard() {
                     <div
                         key={task.instance_id}
                         onClick={() => navigate(`/team/tasks/${task.instance_id}`)}
-                        className="bg-white rounded-lg shadow p-4 flex justify-between items-center"
+                        className="bg-white rounded-lg shadow p-4 flex justify-between items-center cursor-pointer hover:shadow-md transition"
                     >
                         <div>
                             <h2 className="font-semibold text-slate-800">{task.title}</h2>
                             <p className="text-sm text-gray-500">Frequency: {task.frequency}</p>
                         </div>
 
-                        <button
-                            onClick={() => handleComplete(task.instance_id)}
-                            disabled={completingId === task.instance_id}
-                            className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm transition disabled:opacity-50"
-                        >
-                            {completingId === task.instance_id ? "Completing..." : "Mark Complete"}
-                        </button>
+                        {task.status === "completed" ? (
+                            <span className="bg-green-100 text-green-700 px-4 py-2 rounded-lg text-sm font-medium">
+                                ✅ Completed
+                            </span>
+                        ) : task.status === "locked" ? (
+                            <span className="bg-red-100 text-red-700 px-4 py-2 rounded-lg text-sm font-medium">
+                                🔒 Locked
+                            </span>
+                        ) : (
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleComplete(task.instance_id);
+                                }}
+                                disabled={completingId === task.instance_id}
+                                className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm transition disabled:opacity-50"
+                            >
+                                {completingId === task.instance_id ? "Completing..." : "Mark Complete"}
+                            </button>
+                        )}
                     </div>
                 ))}
             </div>
