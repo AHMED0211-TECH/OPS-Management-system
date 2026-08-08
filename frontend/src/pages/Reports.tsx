@@ -1,7 +1,29 @@
+import { useState, useEffect } from "react";
 import StatCard from "../components/StatCard";
-import { stats } from "../data/mockData";
+//import { stats } from "../data/mockData";
+import { apiFetch } from "../api";
+
+interface ReportSummary {
+    total: number;
+    completed: number;
+    pending: number;
+    overdue: number;
+    //locked: number;
+}
 
 export default function Reports() {
+    const [stats, setStats] = useState<ReportSummary | null>(null);
+    const [error, setError] = useState("");
+
+    useEffect(() => {
+        apiFetch("/reports/summary")
+            .then((data) => setStats(data))
+            .catch((err) => setError(err.message))
+    }, []);
+
+    const completionRate = stats && stats.total > 0
+        ? Math.round((stats.completed / stats.total) * 100)
+        : 0;
     return (
         <div>
 
@@ -19,23 +41,24 @@ export default function Reports() {
 
                 <StatCard
                     title="Total Tasks"
-                    value={stats.total}
+                    value={stats?.total ?? "..."}
                 />
 
                 <StatCard
                     title="Completed"
-                    value={stats.completed}
+                    value={stats?.completed ?? "..."}
                 />
 
                 <StatCard
                     title="Pending"
-                    value={stats.pending}
+                    value={stats?.pending ?? "..."}
                 />
 
                 <StatCard
-                    title="Locked"
-                    value={stats.locked}
+                    title="Overdue"
+                    value={stats?.overdue ?? "..."}
                 />
+
 
             </div>
 
@@ -49,13 +72,13 @@ export default function Reports() {
 
                     <div
                         className="bg-blue-600 h-4 rounded-full"
-                        style={{ width: "75%" }}
+                        style={{ width: `${completionRate}%` }}
                     />
 
                 </div>
 
                 <p className="mt-3 text-gray-600">
-                    75% of all scheduled tasks have been completed.
+                    {completionRate}% of all scheduled tasks have been completed.
                 </p>
 
             </div>
