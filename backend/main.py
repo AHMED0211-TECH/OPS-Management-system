@@ -113,7 +113,26 @@ def create_checklist(
         "created_by": new_checklist.created_by,
         "created_at": new_checklist.created_at
     }
-    
+
+
+@app.get("/checklists")
+def list_checklists(user=Depends(get_current_user), db: Session = Depends(get_db)):
+    db_user = get_or_create_user(db, user)
+
+    if db_user.role != "manager":
+        raise HTTPException(status_code=403, detail="Managers only")
+
+    checklists = db.query(MasterChecklist).all()
+
+    return [
+        {
+            "id": c.id,
+            "title": c.title,
+            "created_by": c.created_by,
+            "created_at": c.created_at
+        }
+        for c in checklists
+    ]
 @app.post("/tasks")
 def create_task(
     task: TaskCreate,
@@ -145,6 +164,27 @@ def create_task(
         "interval_hours": new_task.interval_hours
     }
 
+
+@app.get("/tasks")
+def list_tasks(user=Depends(get_current_user), db: Session = Depends(get_db)):
+    db_user = get_or_create_user(db, user)
+
+    if db_user.role != "manager":
+        raise HTTPException(status_code=403, detail="Managers only")
+
+    all_tasks = db.query(Task).all()
+
+    return [
+        {
+            "id": t.id,
+            "title": t.title,
+            "checklist_id": t.checklist_id,
+            "team_id": t.team_id,
+            "frequency": t.frequency,
+            "interval_hours": t.interval_hours
+        }
+        for t in all_tasks
+    ]
 @app.post("/generate-tasks")
 def generate_tasks(
     user=Depends(get_current_user),
