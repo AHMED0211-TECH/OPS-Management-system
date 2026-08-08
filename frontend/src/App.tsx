@@ -13,6 +13,7 @@ import Reports from "./pages/Reports";
 import CreateTask from "./pages/CreateTask";
 import Login from "./pages/Login";
 import Teams from "./pages/Teams";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 function App() {
   return (
@@ -20,16 +21,19 @@ function App() {
       <Routes>
         <Route path="/" element={<Login />} />
 
-        <Route element={<DashboardLayout />}>
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/team/dashboard" element={<TeamDashboard />} />
-          <Route path="/team/tasks/:taskId" element={<TeamTaskDetail />} />
-          <Route path="/checklists" element={<Checklists />} />
-          <Route path="/tasks" element={<Tasks />} />
-          <Route path="/teams" element={<Teams />} />
-          <Route path="/tasks/new" element={<CreateTask />} />
-          <Route path="/overdue" element={<OverdueTasks />} />
-          <Route path="/reports" element={<Reports />} />
+
+        <Route element={<ProtectedRoute />}>
+          <Route element={<DashboardLayout />}>
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/team/dashboard" element={<TeamDashboard />} />
+            <Route path="/team/tasks/:taskId" element={<TeamTaskDetail />} />
+            <Route path="/checklists" element={<Checklists />} />
+            <Route path="/tasks" element={<Tasks />} />
+            <Route path="/teams" element={<Teams />} />
+            <Route path="/tasks/new" element={<CreateTask />} />
+            <Route path="/overdue" element={<OverdueTasks />} />
+            <Route path="/reports" element={<Reports />} />
+          </Route>
         </Route>
       </Routes>
     </BrowserRouter>
