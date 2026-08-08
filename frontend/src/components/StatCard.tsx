@@ -1,6 +1,6 @@
 type Props = {
     title: string;
-    value: number;
+    value: number | string; // allow string '...' for loading/error
 };
 
 export default function StatCard({

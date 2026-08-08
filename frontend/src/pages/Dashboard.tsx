@@ -1,7 +1,25 @@
+import { useEffect, useState } from "react";
 import StatCard from "../components/StatCard";
-import { stats, tasks } from "../data/mockData";
+import { tasks } from "../data/mockData"; // keeping mock for Recent Tasks table for now
+import { apiFetch } from "../api";
+
+interface ReportSummary {
+    completed: number;
+    pending: number;
+    overdue: number;
+    total: number;
+}
 
 export default function Dashboard() {
+    const [stats, setStats] = useState<ReportSummary | null>(null);
+    const [error, setError] = useState("");
+
+    useEffect(() => {
+        apiFetch("/reports/summary")
+            .then((data) => setStats(data))
+            .catch((err) => setError(err.message));
+    }, []);
+
     return (
         <div>
             <h1 className="text-3xl font-bold">
@@ -12,11 +30,17 @@ export default function Dashboard() {
                 Welcome back! Here's today's operations summary.
             </p>
 
+            {error && (
+                <div className="p-3 bg-red-50 text-red-600 text-sm rounded-lg my-4">
+                    {error}
+                </div>
+            )}
+
             <div className="grid grid-cols-4 gap-6 mb-8">
-                <StatCard title="Total Tasks" value={stats.total} />
-                <StatCard title="Completed" value={stats.completed} />
-                <StatCard title="Pending" value={stats.pending} />
-                <StatCard title="Locked" value={stats.locked} />
+                <StatCard title="Total Tasks" value={stats?.total ?? "..."} />
+                <StatCard title="Completed" value={stats?.completed ?? "..."} />
+                <StatCard title="Pending" value={stats?.pending ?? "..."} />
+                <StatCard title="Overdue" value={stats?.overdue ?? "..."} />
             </div>
 
             <div className="bg-white rounded-xl shadow-sm border p-6">
