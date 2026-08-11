@@ -272,6 +272,8 @@ def complete_task(
         "completed_at": instance.completed_at
     }
 
+
+
 @app.post("/lock-overdue-tasks")
 def lock_overdue_tasks(
     user=Depends(get_current_user),

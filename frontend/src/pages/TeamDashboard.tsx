@@ -18,6 +18,7 @@ export default function TeamDashboard() {
     const [error, setError] = useState("");
     const [completingId, setCompletingId] = useState<number | null>(null);
     const navigate = useNavigate();
+    const [filter, setFilter] = useState("pending");
 
 
     const loadTasks = () => {
@@ -65,39 +66,55 @@ export default function TeamDashboard() {
             )}
 
             <div className="space-y-3">
-                {tasks.map((task) => (
-                    <div
-                        key={task.instance_id}
-                        onClick={() => navigate(`/team/tasks/${task.instance_id}`)}
-                        className="bg-white rounded-lg shadow p-4 flex justify-between items-center cursor-pointer hover:shadow-md transition"
+                <div className="flex gap-4 mb-6">
+                    <button
+                        onClick={() => setFilter("pending")}
+                        className={`px-4 py-2 rounded-lg text-sm font-medium ${filter === "pending" ? "bg-blue-600 text-white" : "bg-gray-200 text-gray-700"
+                            }`}
                     >
-                        <div>
-                            <h2 className="font-semibold text-slate-800">{task.title}</h2>
-                            <p className="text-sm text-gray-500">Frequency: {task.frequency}</p>
-                        </div>
+                        Incomplete
+                    </button>
+                    <button
+                        onClick={() => setFilter("completed")}
+                        className={`px-4 py-2 rounded-lg text-sm font-medium ${filter === "completed" ? "bg-blue-600 text-white" : "bg-gray-200 text-gray-700"
+                            }`}
+                    >
+                        Completed
+                    </button>
+                    <button
+                        onClick={() => setFilter("locked")}
+                        className={`px-4 py-2 rounded-lg text-sm font-medium ${filter === "locked" ? "bg-blue-600 text-white" : "bg-gray-200 text-gray-700"
+                            }`}
+                    >
+                        Overdue
+                    </button>
+                </div>
 
-                        {task.status === "completed" ? (
-                            <span className="bg-green-100 text-green-700 px-4 py-2 rounded-lg text-sm font-medium">
-                                ✅ Completed
-                            </span>
-                        ) : task.status === "locked" ? (
-                            <span className="bg-red-100 text-red-700 px-4 py-2 rounded-lg text-sm font-medium">
-                                🔒 Locked
-                            </span>
-                        ) : (
-                            <button
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleComplete(task.instance_id);
-                                }}
-                                disabled={completingId === task.instance_id}
-                                className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm transition disabled:opacity-50"
-                            >
-                                {completingId === task.instance_id ? "Completing..." : "Mark Complete"}
-                            </button>
-                        )}
-                    </div>
-                ))}
+                {tasks
+                    .filter((t) => t.status === filter)
+                    .map((task) => (
+                        <div
+                            key={task.instance_id}
+                            onClick={() => navigate(`/team/tasks/${task.instance_id}`)}
+                            className="bg-white rounded-lg shadow p-4 flex justify-between items-center cursor-pointer hover:shadow-md transition"
+                        >
+
+                            <div>
+                                <h2 className="font-semibold text-slate-800">{task.title}</h2>
+                                <p className="text-sm text-gray-500">Frequency: {task.frequency}</p>
+                            </div>
+
+                            {task.status === "completed" ? (
+                                <span className="bg-green-100 text-green-700 px-4 py-2 rounded-lg text-sm font-medium">
+                                    ✅ Completed
+                                </span>
+                            ) : task.status === "locked" ? (
+                                <span className="bg-red-100 text-red-700 px-4 py-2 rounded-lg text-sm font-medium">
+                                    🔒 Locked
+                                </span>
+                            ) : null}
+                        </div>
+                    ))}
             </div>
         </div>
     );
