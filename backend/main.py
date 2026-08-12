@@ -5,7 +5,7 @@ from auth import get_current_user
 from database import get_db
 from CRUD import get_or_create_user
 from sqlalchemy.orm import Session
-from models import MasterChecklist, Task, TaskInstance
+from models import MasterChecklist, Task, TaskInstance, User
 from pydantic import BaseModel
 from datetime import date, datetime, timedelta
 from fastapi.middleware.cors import CORSMiddleware
@@ -122,17 +122,74 @@ def list_checklists(user=Depends(get_current_user), db: Session = Depends(get_db
     if db_user.role != "manager":
         raise HTTPException(status_code=403, detail="Managers only")
 
-    checklists = db.query(MasterChecklist).all()
+    result = (
+        db.query(MasterChecklist, User)
+    .join(User, User.id == MasterChecklist.created_by)
+    .all()
+    )
 
     return [
         {
             "id": c.id,
             "title": c.title,
             "created_by": c.created_by,
+            "created_by_name":user.name,
             "created_at": c.created_at
         }
-        for c in checklists
+        for c,user in result
     ]
+
+@app.get("/checklists/{checklist_id}")
+def get_checklist_detail(
+    checklist_id: int,
+    user=Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    db_user = get_or_create_user(db, user)
+
+    if db_user.role != "manager":
+        raise HTTPException(status_code=403, detail="Managers only")
+
+    result = (
+        db.query(MasterChecklist, User)
+        .join(User, User.id == MasterChecklist.created_by)
+        .filter(MasterChecklist.id == checklist_id)
+        .first()
+    )
+
+    if not result:
+        raise HTTPException(status_code=404, detail="Checklist not found")
+
+    checklist, creator = result
+
+    tasks = db.query(Task).filter(Task.checklist_id == checklist_id).all()
+
+    task_list = []
+    for task in tasks:
+        latest_instance = (
+            db.query(TaskInstance)
+            .filter(TaskInstance.task_id == task.id)
+            .order_by(TaskInstance.due_date.desc())
+            .first()
+        )
+        task_list.append({
+            "id": task.id,
+            "title": task.title,
+            "team_id": task.team_id,
+            "frequency": task.frequency,
+            "interval_hours": task.interval_hours,
+            "latest_status": latest_instance.status if latest_instance else "no instances yet",
+            "latest_due_date": latest_instance.due_date if latest_instance else None,
+        })
+
+    return {
+        "id": checklist.id,
+        "title": checklist.title,
+        "created_by_name": creator.name,
+        "created_at": checklist.created_at,
+        "tasks": task_list,
+    }
+
 @app.post("/tasks")
 def create_task(
     task: TaskCreate,
@@ -272,6 +329,33 @@ def complete_task(
         "completed_at": instance.completed_at
     }
 
+@app.get("/task-instances/{instance_id}")
+def get_task_instance(
+    instance_id: int,
+    user=Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    db_user = get_or_create_user(db, user)
+
+    instance = db.query(TaskInstance).filter(TaskInstance.id == instance_id).first()
+    if not instance:
+        raise HTTPException(status_code=404, detail="Task instance not found")
+
+    task = db.query(Task).filter(Task.id == instance.task_id).first()
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
+
+    return {
+        "id": instance.id,
+        "task_id": task.id,
+        "title": task.title,
+        "checklist_id": task.checklist_id,
+        "team_id": task.team_id,
+        "frequency": task.frequency,
+        "status": instance.status,
+        "due_date": instance.due_date,
+        "completed_at": instance.completed_at
+    }
 
 
 @app.post("/lock-overdue-tasks")

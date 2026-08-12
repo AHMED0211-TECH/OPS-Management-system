@@ -15,6 +15,7 @@ import Login from "./pages/Login";
 import Teams from "./pages/Teams";
 import ProtectedRoute from "./components/ProtectedRoute";
 import TeamLayout from "./layouts/Teamlayout";
+import ChecklistDetail from "./pages/ChecklistDetail";
 
 function App() {
   return (
@@ -27,6 +28,7 @@ function App() {
           <Route element={<DashboardLayout />}>
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/checklists" element={<Checklists />} />
+            <Route path="/checklists/:id" element={<ChecklistDetail />} />
             <Route path="/tasks" element={<Tasks />} />
             <Route path="/teams" element={<Teams />} />
             <Route path="/tasks/new" element={<CreateTask />} />

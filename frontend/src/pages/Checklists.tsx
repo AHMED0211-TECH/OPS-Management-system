@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
 import { apiFetch } from "../api";
+import { useNavigate } from "react-router-dom";
 
 interface Checklist {
     id: number;
     title: string;
     created_by: number;
+    created_by_name: string;
     created_at: string;
 }
 
@@ -12,6 +14,7 @@ export default function Checklists() {
     const [checklists, setChecklists] = useState<Checklist[]>([]);
     const [error, setError] = useState("");
     const [creating, setCreating] = useState(false);
+    const navigate = useNavigate();
 
     const loadChecklists = () => {
         apiFetch("/checklists")
@@ -80,19 +83,33 @@ export default function Checklists() {
                         <tr>
                             <th className="px-6 py-4 text-left">Title</th>
                             <th className="px-6 py-4 text-left">Created By</th>
+
                             <th className="px-6 py-4 text-left">Created On</th>
                         </tr>
                     </thead>
 
                     <tbody>
                         {checklists.map((c) => (
-                            <tr key={c.id} className="border-t">
+                            <tr
+                                key={c.id}
+                                className="border-t cursor-pointer hover:bg-slate-50"
+                                onClick={() => navigate(`/checklists/${c.id}`)}
+                            >
                                 <td className="px-6 py-4">{c.title}</td>
-                                <td className="px-6 py-4">User #{c.created_by}</td>
                                 <td className="px-6 py-4">
-                                    {new Date(c.created_at).toLocaleDateString()}
+                                    <span className="bg-slate-200 text-slate-700 px-2 py-1 rounded">
+                                        {c.created_by_name}
+                                    </span>
+                                </td>
+                                <td className="px-6 py-4">
+                                    {new Date(c.created_at).toLocaleDateString("en-US", {
+                                        year: "numeric",
+                                        month: "short",
+                                        day: "numeric",
+                                    })}
                                 </td>
                             </tr>
+
                         ))}
                     </tbody>
 
