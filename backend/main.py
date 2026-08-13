@@ -9,6 +9,10 @@ from models import MasterChecklist, Task, TaskInstance, User
 from pydantic import BaseModel
 from datetime import date, datetime, timedelta
 from fastapi.middleware.cors import CORSMiddleware
+import json
+from supabase import create_client
+import os
+from fastapi import File, UploadFile
 
 class ChecklistCreate(BaseModel):
     title: str
@@ -20,6 +24,9 @@ class TaskCreate(BaseModel):
     frequency: str
     interval_hours: int | None = None
 
+class NoteUpdate(BaseModel):
+    content: str
+
 app = FastAPI()
 
 app.add_middleware(
@@ -29,6 +36,11 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Image upload config
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_ANON_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY")   # use service role key for uploads
+supabase_admin = create_client(SUPABASE_URL, SUPABASE_ANON_KEY)
 
 @app.get("/")
 def root():
@@ -319,6 +331,7 @@ def complete_task(
 
     instance.status = "completed"
     instance.completed_at = datetime.utcnow()
+    instance.completed_by = db_user.id
     db.commit()
     db.refresh(instance)
 
@@ -327,6 +340,76 @@ def complete_task(
         "task_id": instance.task_id,
         "status": instance.status,
         "completed_at": instance.completed_at
+    }
+
+@app.patch("/task-instances/{instance_id}/notes")
+def update_task_notes(
+    instance_id: int,
+    note: NoteUpdate,
+    user=Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    db_user = get_or_create_user(db, user)
+
+    instance = db.query(TaskInstance).filter(TaskInstance.id == instance_id).first()
+
+    if not instance:
+        raise HTTPException(status_code=404, detail="Task instance not found")
+
+    task = db.query(Task).filter(Task.id == instance.task_id).first()
+
+    if task.team_id != db_user.team_id:
+        raise HTTPException(status_code=403, detail="You can only edit notes on your own team's tasks")
+
+    instance.notes = note.content
+    db.commit()
+    db.refresh(instance)
+
+    return {
+        "id": instance.id,
+        "notes": instance.notes
+    }
+
+@app.post("/task-instances/{instance_id}/images")
+def upload_task_image(
+    instance_id: int,
+    file: UploadFile = File(...),
+    user=Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    db_user = get_or_create_user(db, user)
+
+    instance = db.query(TaskInstance).filter(TaskInstance.id == instance_id).first()
+
+    if not instance:
+        raise HTTPException(status_code=404, detail="Task instance not found")
+
+    task = db.query(Task).filter(Task.id == instance.task_id).first()
+
+    if task.team_id != db_user.team_id:
+        raise HTTPException(status_code=403, detail="You can only upload images to your own team's tasks")
+
+    file_bytes = file.file.read()
+    file_path = f"{instance_id}/{datetime.utcnow().timestamp()}_{file.filename}"
+
+    supabase_admin.storage.from_("task_images").upload(
+        file_path,
+        file_bytes,
+        {"content-type": file.content_type}
+    )
+
+    public_url = supabase_admin.storage.from_("task_images").get_public_url(file_path)
+
+    existing_urls = json.loads(instance.image_urls) if instance.image_urls else []
+    existing_urls.append(public_url)
+    instance.image_urls = json.dumps(existing_urls)
+
+    db.commit()
+    db.refresh(instance)
+
+    return {
+        "id": instance.id,
+        "image_urls": json.loads(instance.image_urls)
     }
 
 @app.get("/task-instances/{instance_id}")

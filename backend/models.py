@@ -54,6 +54,8 @@ class TaskInstance(Base):
     due_date = Column(Date, nullable=False)
     status = Column(String, nullable=False)  # "pending", "completed", "locked"
     completed_at = Column(DateTime, nullable=True)
+    notes = Column(String, nullable=True)
+    image_urls = Column(String, nullable=True)
     
     task = relationship("Task")
     

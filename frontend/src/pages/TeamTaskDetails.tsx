@@ -12,6 +12,8 @@ interface TaskDetails {
     status: string;
     due_date: string;
     completed_at?: string;
+    notes?: string;
+    image_urls?: string[];
 }
 
 
@@ -23,6 +25,8 @@ export default function TeamTaskDetail() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
     //const [done, setDone] = useState(false);
+    const [noteText, setNoteText] = useState("");
+    // const [image, setImage] = useState<File | null>(null);
 
     useEffect(() => {
         apiFetch(`/task-instances/${taskId}`)
@@ -44,6 +48,44 @@ export default function TeamTaskDetail() {
             setCompleting(false);
         }
     };
+    const handleSaveNote = async () => {
+        try {
+            await apiFetch(`/task-instances/${taskId}/notes`, {
+                method: "PATCH",
+                body: JSON.stringify({ note_text: noteText }),
+                headers: { "content-type": "application/json" }
+            });
+            setTask((prev) =>
+                prev ? { ...prev, notes: noteText } : prev
+            );
+            setNoteText("");
+        } catch (err) {
+            setError(err instanceof Error ? err.message : "Failed to save note");
+        }
+    };
+    const handleUploadImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (!e.target.files?.length) return;
+        const file = e.target.files[0];
+        const formData = new FormData();
+        formData.append("file", file);
+
+        try {
+            const res = await fetch(`http://127.0.0.1:8000/task-instances/${taskId}/images`, {
+                method: "POST",
+                body: formData,
+            });
+            if (!res.ok) throw new Error(await res.text());
+            const data = await res.json();
+            console.log("Uploaded:", data);
+            // Update task state with new image URLs
+            setTask((prev) =>
+                prev ? { ...prev, image_urls: data.image_urls } : prev
+            );
+        } catch (err) {
+            setError(err instanceof Error ? err.message : "Failed to upload image");
+        }
+    };
+
 
     if (loading) return <p>Loading...</p>;
     if (error) return <p className="text-red-600">{error}</p>;
@@ -64,6 +106,56 @@ export default function TeamTaskDetail() {
                 <p>Task ID: {task.task_id}</p>
                 <p>Checklist ID: {task.checklist_id}</p>
                 <p>Team ID: {task.team_id}</p>
+
+                <div className="mt-6">
+                    <label className="block text-sm font-medium text-slate-700 mb-2">
+                        Notes
+                    </label>
+                    <textarea
+                        value={noteText}
+                        onChange={(e) => setNoteText(e.target.value)}
+                        className="w-full border rounded-lg p-2"
+                        rows={3}
+                        placeholder="Add a note..."
+                    />
+                    <button
+                        onClick={handleSaveNote}
+                        className="mt-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg"
+                    >
+                        Save Note
+                    </button>
+                </div>
+
+                <div className="mt-6">
+                    <label className="block text-sm font-medium text-slate-700 mb-2">
+                        Upload Image
+                    </label>
+                    <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleUploadImage}
+                        className="block w-full text-sm text-slate-500"
+                    />
+                </div>
+
+                {task.image_urls && task.image_urls.length > 0 && (
+                    <div className="mt-6">
+                        <h2 className="text-sm font-medium text-slate-700 mb-2">Uploaded Images</h2>
+                        <div className="flex gap-4 flex-wrap">
+                            {task.image_urls.map((url, idx) => (
+                                <img
+                                    key={idx}
+                                    src={url}
+                                    alt={`Task image ${idx + 1}`}
+                                    className="w-32 h-32 object-cover rounded-lg border"
+                                />
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+
+
 
                 {error && (
                     <div className="p-3 bg-red-50 text-red-600 text-sm rounded-lg mb-4">
