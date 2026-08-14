@@ -1,5 +1,4 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { supabase } from "./supabaseClient";
 
 import DashboardLayout from "./layouts/DashboardLayout";
 
@@ -16,6 +15,7 @@ import Teams from "./pages/Teams";
 import ProtectedRoute from "./components/ProtectedRoute";
 import TeamLayout from "./layouts/Teamlayout";
 import ChecklistDetail from "./pages/ChecklistDetail";
+import ManagerInstanceDetail from "./pages/MasterInstance";
 
 function App() {
   return (
@@ -29,6 +29,7 @@ function App() {
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/checklists" element={<Checklists />} />
             <Route path="/checklists/:id" element={<ChecklistDetail />} />
+            <Route path="/task-instances/:id" element={<ManagerInstanceDetail />} />
             <Route path="/tasks" element={<Tasks />} />
             <Route path="/teams" element={<Teams />} />
             <Route path="/tasks/new" element={<CreateTask />} />
@@ -43,12 +44,5 @@ function App() {
       </Routes>
     </BrowserRouter>
   );
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    console.log('Supabase client:', supabase)
-  }
 }
-
-
 export default App;

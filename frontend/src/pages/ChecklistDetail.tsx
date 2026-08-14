@@ -11,6 +11,7 @@ interface TaskSummary {
     interval_hours: number;
     latest_status: string;
     latest_due_date?: string;
+    latest_instance_id?: number | null;
 }
 
 interface ChecklistDetail {
@@ -63,7 +64,15 @@ export default function ChecklistDetail() {
                     </thead>
                     <tbody>
                         {checklist.tasks.map((t) => (
-                            <tr key={t.id} className="border-t">
+                            // <tr key={t.id} className="border-t">
+                            <tr
+                                key={t.id}
+                                className={`border-t ${t.latest_instance_id ? "cursor-pointer hover:bg-slate-50" : "opacity-60"}`}
+                                onClick={() => {
+                                    if (t.latest_instance_id) navigate(`/task-instances/${t.latest_instance_id}`);
+                                }}
+                            >
+
                                 <td className="px-4 py-2">{t.title}</td>
                                 <td className="px-4 py-2">{t.frequency}</td>
                                 <td className="px-4 py-2">Team #{t.team_id}</td>

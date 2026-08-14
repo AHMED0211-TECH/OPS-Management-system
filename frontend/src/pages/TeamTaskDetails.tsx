@@ -1,6 +1,7 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { apiFetch } from "../api";
+import { supabase } from "../supabaseClient";
 
 interface TaskDetails {
     id: number;
@@ -52,8 +53,8 @@ export default function TeamTaskDetail() {
         try {
             await apiFetch(`/task-instances/${taskId}/notes`, {
                 method: "PATCH",
-                body: JSON.stringify({ note_text: noteText }),
-                headers: { "content-type": "application/json" }
+                body: JSON.stringify({ content: noteText }),
+                headers: { "Content-Type": "application/json" }
             });
             setTask((prev) =>
                 prev ? { ...prev, notes: noteText } : prev
@@ -70,16 +71,23 @@ export default function TeamTaskDetail() {
         formData.append("file", file);
 
         try {
+            const { data } = await supabase.auth.getSession();
+            const token = data.session?.access_token;
+            console.log("TOKEN:", token);
+
             const res = await fetch(`http://127.0.0.1:8000/task-instances/${taskId}/images`, {
                 method: "POST",
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
                 body: formData,
             });
             if (!res.ok) throw new Error(await res.text());
-            const data = await res.json();
-            console.log("Uploaded:", data);
+            const result = await res.json();
+            console.log("Uploaded:", result);
             // Update task state with new image URLs
             setTask((prev) =>
-                prev ? { ...prev, image_urls: data.image_urls } : prev
+                prev ? { ...prev, image_urls: result.image_urls } : prev
             );
         } catch (err) {
             setError(err instanceof Error ? err.message : "Failed to upload image");

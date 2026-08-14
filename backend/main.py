@@ -5,7 +5,7 @@ from auth import get_current_user
 from database import get_db
 from CRUD import get_or_create_user
 from sqlalchemy.orm import Session
-from models import MasterChecklist, Task, TaskInstance, User
+from models import MasterChecklist, Task, TaskInstance, User, Team
 from pydantic import BaseModel
 from datetime import date, datetime, timedelta
 from fastapi.middleware.cors import CORSMiddleware
@@ -192,6 +192,7 @@ def get_checklist_detail(
             "interval_hours": task.interval_hours,
             "latest_status": latest_instance.status if latest_instance else "no instances yet",
             "latest_due_date": latest_instance.due_date if latest_instance else None,
+            "latest_instance_id": latest_instance.id if latest_instance else None,
         })
 
     return {
@@ -360,6 +361,8 @@ def update_task_notes(
 
     if task.team_id != db_user.team_id:
         raise HTTPException(status_code=403, detail="You can only edit notes on your own team's tasks")
+    
+
 
     instance.notes = note.content
     db.commit()
@@ -427,17 +430,23 @@ def get_task_instance(
     task = db.query(Task).filter(Task.id == instance.task_id).first()
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
+    
+    team = db.query(Team).filter(Team.id == task.team_id).first()
+    if not team:
+        raise HTTPException(status_code=404, detail="Team not found")
 
     return {
         "id": instance.id,
         "task_id": task.id,
         "title": task.title,
         "checklist_id": task.checklist_id,
-        "team_id": task.team_id,
+        "team_name": team.name,
         "frequency": task.frequency,
         "status": instance.status,
         "due_date": instance.due_date,
-        "completed_at": instance.completed_at
+        "completed_at": instance.completed_at,
+        "notes": instance.notes,
+        "image_urls":json.loads(instance.image_urls) if instance.image_urls else [],
     }
 
 
