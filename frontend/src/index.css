@@ -1,5 +1,24 @@
 @import "tailwindcss";
 
+@theme {
+
+  --font-sans: 'Inter', ui-sans-serif, system-ui;
+  --font-heading: 'Krub', ui-sans-serif, system-ui;
+
+  --color-brand-50: #effcfb;
+  --color-brand-100: #c7f5f1;
+  --color-brand-200: #8fece4;
+  --color-brand-300: #54ded3;
+  --color-brand-400: #2bc7ba;
+  --color-brand-500: #15a89c;
+  --color-brand-600: #0f8a80;
+  --color-brand-700: #0d6f67;
+  --color-brand-800: #0e5852;
+  --color-brand-900: #0e4844;
+
+  --color-ink-900: #0f172a;
+}
+
 html,
 body,
 #root {

@@ -22,9 +22,7 @@ export default function Dashboard() {
 
     return (
         <div>
-            <h1 className="text-3xl font-bold">
-                Dashboard
-            </h1>
+            <h1 className="font-heading text-3xl text-brand-600">Testing Fonts and Colors</h1>
 
             <p className="text-gray-500 mt-1">
                 Welcome back! Here's today's operations summary.

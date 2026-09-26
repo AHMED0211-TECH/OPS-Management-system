@@ -1,6 +1,9 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { apiFetch } from "../api";
+import PageHeader from "../components/PageHeader";
+import EmptyState from "../components/EmptyState";
+import Skeleton from "../components/Skeleton";
 
 interface Task {
     id: number;
@@ -20,13 +23,15 @@ const teamNames: Record<number, string> = {
 export default function Tasks() {
     const navigate = useNavigate();
     const [tasks, setTasks] = useState<Task[]>([]);
+    const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
     const [generating, setGenerating] = useState(false);
 
     const loadTasks = () => {
         apiFetch("/tasks")
             .then((data) => setTasks(data))
-            .catch((err) => setError(err.message));
+            .catch((err) => setError(err.message))
+            .finally(() => setLoading(false));
     };
 
     useEffect(() => {
@@ -45,38 +50,31 @@ export default function Tasks() {
         }
     };
 
+    if (loading) {
+        return (
+            <div>
+                <Skeleton className="h-8 w-40 mb-2" />
+                <Skeleton className="h-4 w-56 mb-6" />
+                <div className="space-y-3">
+                    <Skeleton className="h-16 w-full rounded-xl" />
+                    <Skeleton className="h-16 w-full rounded-xl" />
+                    <Skeleton className="h-16 w-full rounded-xl" />
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div>
-
-            <div className="flex justify-between items-center mb-6">
-
-                <div>
-                    <h1 className="text-3xl font-bold">
-                        Tasks
-                    </h1>
-
-                    <p className="text-gray-500">
-                        Manage all operational tasks.
-                    </p>
-                </div>
-
-                <div className="flex gap-3">
-                    <button
-                        onClick={handleGenerate}
-                        disabled={generating}
-                        className="bg-slate-600 text-white px-5 py-2 rounded-lg hover:bg-slate-700 disabled:opacity-50"
-                    >
-                        {generating ? "Generating..." : "🔄 Generate Today's Tasks"}
-                    </button>
-
-                    <button
-                        onClick={() => navigate("/tasks/new")}
-                        className="bg-blue-600 text-white px-5 py-2 rounded-lg hover:bg-blue-700">
-                        + Create Task
-                    </button>
-                </div>
-
-            </div>
+            <PageHeader
+                title="Tasks"
+                subtitle="Manage all operational tasks."
+                actionLabel="+ Create Task"
+                onAction={() => navigate("/tasks/new")}
+                secondaryLabel={generating ? "Generating..." : "🔄 Generate Today's Tasks"}
+                onSecondaryAction={handleGenerate}
+                secondaryDisabled={generating}
+            />
 
             {error && (
                 <div className="p-3 bg-red-50 text-red-600 text-sm rounded-lg mb-4">
@@ -84,41 +82,39 @@ export default function Tasks() {
                 </div>
             )}
 
-            <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
-
-                <table className="w-full">
-
-                    <thead className="bg-slate-50">
-                        <tr>
-                            <th className="text-left px-6 py-4">Task</th>
-                            <th className="text-left px-6 py-4">Team</th>
-                            <th className="text-left px-6 py-4">Frequency</th>
-                        </tr>
-                    </thead>
-
-                    <tbody>
-                        {tasks.map(task => (
-                            <tr key={task.id} className="border-t hover:bg-slate-50">
-                                <td className="px-6 py-4 font-medium">{task.title}</td>
-                                <td className="px-6 py-4">{teamNames[task.team_id] ?? "Unknown"}</td>
-                                <td className="px-6 py-4 capitalize">
+            {tasks.length === 0 && !error ? (
+                <EmptyState
+                    icon="✅"
+                    title="No tasks yet"
+                    description="Create a task within a checklist to start assigning recurring work."
+                    actionLabel="+ Create Task"
+                    onAction={() => navigate("/tasks/new")}
+                />
+            ) : (
+                <div className="space-y-3">
+                    {tasks.map((task) => (
+                        <div
+                            key={task.id}
+                            className="bg-white rounded-xl shadow-sm border border-slate-200 p-5 flex items-center justify-between"
+                        >
+                            <h3 className="font-heading text-base font-semibold text-ink-900">
+                                {task.title}
+                            </h3>
+                            <div className="flex items-center gap-6 text-sm text-slate-600">
+                                <span className="bg-slate-100 px-2 py-1 rounded text-xs">
+                                    {teamNames[task.team_id] ?? "Unknown"}
+                                </span>
+                                <span className="capitalize">
                                     {task.frequency}
                                     {task.frequency === "every_x_hours" && task.interval_hours
                                         ? ` (${task.interval_hours}h)`
                                         : ""}
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-
-                </table>
-
-            </div>
-
-            {tasks.length === 0 && !error && (
-                <p className="text-gray-500 mt-4">No tasks yet.</p>
+                                </span>
+                            </div>
+                        </div>
+                    ))}
+                </div>
             )}
-
         </div>
     );
 }
